@@ -23,6 +23,7 @@ import uvicorn
 import asyncio
 import json
 import time
+from datetime import datetime
 
 # Initialize MediaPipe Pose
 mp_pose = mp.solutions.pose
@@ -50,6 +51,9 @@ frame_lock = threading.Lock()
 # format: [(timestamp, rating), ...]
 rating_over_time = []
 
+# Store posture ratings over time
+# tuple of (timestamp, rating)
+rating_over_time = []
 
 # FastAPI app
 app = FastAPI(title="Pose Detection API")
@@ -280,32 +284,35 @@ async def websocket_calibrate(websocket: WebSocket):
             message = json.loads(data)
             
             if message.get("action") == "calibrate":
-                if current_neck_length is not None:
-                    baseline_neck_length = current_neck_length
-                    response = {
-                        "status": "success",
-                        "baseline": round(baseline_neck_length, 1),
-                        "message": "Baseline calibrated successfully"
-                    }
-                    print(f"Baseline calibrated: {baseline_neck_length:.1f} cm")
-                else:
-                    response = {
-                        "status": "error",
-                        "message": "No pose detected. Please ensure you're visible to the camera."
-                    }
-                
-                await websocket.send_text(json.dumps(response))
+              # set the baseline posture
+              if current_neck_length is not None:
+                  baseline_neck_length = current_neck_length
+                  response = {
+                      "status": "success",
+                      "baseline": round(baseline_neck_length, 1),
+                      "message": "Baseline calibrated successfully"
+                  }
+                  print(f"Baseline calibrated: {baseline_neck_length:.1f} cm")
+              else:
+                  response = {
+                      "status": "error",
+                      "message": "No pose detected. Please ensure you're visible to the camera."
+                  }
+              
+              await websocket.send_text(json.dumps(response))
             
             elif message.get("action") == "reset":
-                baseline_neck_length = None
-                response = {
-                    "status": "success",
-                    "message": "Baseline reset"
-                }
-                await websocket.send_text(json.dumps(response))
-                print("Baseline reset")
+              # reset the baseline posture
+              baseline_neck_length = None
+              response = {
+                  "status": "success",
+                  "message": "Baseline reset"
+              }
+              await websocket.send_text(json.dumps(response))
+              print("Baseline reset")
             
             elif message.get("action") == "rating":
+              # get the current posture rating
               if baseline_neck_length is not None and current_neck_length is not None:
                 rating = calculate_posture_rating(current_neck_length, baseline_neck_length)
                 difference = current_neck_length - baseline_neck_length
@@ -335,7 +342,8 @@ async def websocket_calibrate(websocket: WebSocket):
                 }
                 await websocket.send_text(json.dumps(response))
             else:
-              print("not valid",message)
+              # couldn't recognize the command
+              print("not valid", message)
     
     except WebSocketDisconnect:
         print("Calibration WebSocket disconnected")
