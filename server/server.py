@@ -179,7 +179,15 @@ def calculate_posture_rating(current_length, baseline_length):
     # Convert to rating (100 = perfect match, decreases with difference)
     # Using exponential decay for smoother rating
     rating = int((1.0 - (difference * 2 / baseline_length)) * 100)
-    
+    rating = max(0, min(100, rating))  # Clamp between 0 and 100
+
+    # Append to rating history with timestamp
+    rating_over_time.append((time.time(), rating))
+    if len(rating_over_time) > 1000:  # Limit history size
+        rating_over_time.pop(0)
+
+        
+    print("Current number of saved ratings:", len(rating_over_time))
     return int(rating)
 
 def camera_thread():
@@ -320,7 +328,7 @@ async def websocket_calibrate(websocket: WebSocket):
                 }
               
               await websocket.send_text(json.dumps(response))
-              await asyncio.sleep(0.1)  # Send updates 10 times per second
+              await asyncio.sleep(30)  # Send updates 10 times per second
             elif message.get("action") == "history":
                 response = {
                     "history": rating_over_time
