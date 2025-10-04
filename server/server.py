@@ -336,9 +336,9 @@ async def websocket_calibrate(websocket: WebSocket):
               
               await websocket.send_text(json.dumps(response))
               await asyncio.sleep(30)  # Send updates 10 times per second
-            elif message.get("action") == "history":
+            elif message.get("action") == "graph":
                 response = {
-                    "history": rating_over_time
+                    "data": rating_over_time
                 }
                 await websocket.send_text(json.dumps(response))
             else:
@@ -349,6 +349,61 @@ async def websocket_calibrate(websocket: WebSocket):
         print("Calibration WebSocket disconnected")
     except Exception as e:
         print(f"Calibration WebSocket error: {e}")
+
+@app.websocket("/ws/rating")
+async def websocket_rating(websocket: WebSocket):
+    """
+    WebSocket endpoint to stream real-time posture rating
+    Continuously sends rating based on current vs baseline neck length
+    """
+    await websocket.accept()
+    print("Rating WebSocket connected")
+    
+    try:
+        while True:
+            if baseline_neck_length is not None and current_neck_length is not None:
+                rating = calculate_posture_rating(current_neck_length, baseline_neck_length)
+                difference = current_neck_length - baseline_neck_length
+                
+                response = {
+                    "rating": rating,
+                    "current_length": round(current_neck_length, 1),
+                    "baseline_length": round(baseline_neck_length, 1),
+                    "difference": round(difference, 1),
+                    "status": "good" if rating >= 95 else "moderate" if rating >= 70 else "poor"
+                }
+            else:
+                response = {
+                    "rating": 0,
+                    "current_length": round(current_neck_length, 1) if current_neck_length else None,
+                    "baseline_length": round(baseline_neck_length, 1) if baseline_neck_length else None,
+                    "difference": 0,
+                    "status": "not_calibrated" if baseline_neck_length is None else "no_pose"
+                }
+            
+            await websocket.send_text(json.dumps(response))
+            await asyncio.sleep(1)
+        
+    except WebSocketDisconnect:
+        print("Rating WebSocket disconnected")
+    except Exception as e:
+        print(f"Rating WebSocket error: {e}")
+
+@app.on_event("startup")
+async def startup_event():
+    """Start the camera thread when the server starts"""
+    thread = threading.Thread(target=camera_thread, daemon=True)
+    thread.start()
+    print("Camera thread started")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup when server shuts down"""
+    global camera, pose_processor
+    if camera:
+        camera.release()
+    if pose_processor:
+        pose_processor.close()
 
 if __name__ == "__main__":
     print("Starting Pose Detection Server...")
