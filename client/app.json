@@ -8,6 +8,9 @@
     "scheme": "bactrack",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "notification":{
+         "icon":"./assets/images/icon.png"
+      },
     "ios": {
       "supportsTablet": true
     },
@@ -27,6 +30,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
@@ -43,6 +47,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f28db9ee-f01a-481f-b4c3-1d885bd7130c"
+      }
+    },
+    "owner": "katzhang"
   }
 }

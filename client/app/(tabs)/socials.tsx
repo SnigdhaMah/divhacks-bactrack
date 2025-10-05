@@ -1,7 +1,6 @@
 // socials.tsx
 import React from "react";
 import { Text, ScrollView, StyleSheet, View } from "react-native";
-import { SafeAreaView } from 'react-native-safe-area-context';
 import FriendCard from "../../components/friendsCard";
 import InviteCard from "../../components/inviteCard";
 

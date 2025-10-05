@@ -186,8 +186,10 @@ def calculate_posture_rating(current_length, baseline_length):
     rating = max(0, min(100, rating))  # Clamp between 0 and 100
 
     # Append to rating history with timestamp
-    rating_over_time.append((time.time(), rating))
-    if len(rating_over_time) > 1000:  # Limit history size
+    timestamp = time.time()
+    print("timestamp:", timestamp)
+    rating_over_time.append([timestamp, rating])
+    if len(rating_over_time) > 10:  # Limit history size
         rating_over_time.pop(0)
 
         
@@ -335,7 +337,6 @@ async def websocket_calibrate(websocket: WebSocket):
                 }
               
               await websocket.send_text(json.dumps(response))
-              await asyncio.sleep(30)  # Send updates 10 times per second
             elif message.get("action") == "graph":
                 response = {
                     "data": rating_over_time
@@ -382,7 +383,6 @@ async def websocket_rating(websocket: WebSocket):
                 }
             
             await websocket.send_text(json.dumps(response))
-            await asyncio.sleep(1)
         
     except WebSocketDisconnect:
         print("Rating WebSocket disconnected")

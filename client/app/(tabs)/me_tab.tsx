@@ -7,12 +7,171 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Pressable,
+  Platform,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import { MaterialCommunityIcons, FontAwesome5 } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 
-// ✅ Added WebSocket + UI additions
 export default function MeTab() {
+  const IP_ADDRESS = "10.206.36.242";
+  const ws = new WebSocket(`ws://${IP_ADDRESS}:8000/ws/`);
+
+  ws.onopen = () => {
+    console.log("Connected to posture server");
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log("Received:", data);
+    if ("rating" in data) {
+      handleRating(data);
+    } else if ("data" in data) {
+      handleGraph(data);
+    } else if ("message" in data && data.message === "Baseline reset") {
+      setRatingData({
+        rating: 0,
+        current_length: 0,
+        baseline_length: 0,
+        difference: 0,
+        status: "poor",
+      });
+    }
+  };
+
+  ws.onerror = (e) => {
+    // an error occurred
+    console.log(e);
+  };
+
+  ws.onclose = (e) => {
+    // connection closed
+    console.log(e.code, e.reason);
+  };
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+
+  const notifications = [
+    "Crystal is killing it! Catch up!",
+    "Damn, not even a downward dog?",
+    "Are your cosplaying a shrimp?",
+    "Fly higher with a butterfly stretch!",
+    "OMGGG BODY GOALS (do the goal post move)",
+    "Stand up straighter queen, your crown is slipping",
+  ];
+  async function sendPushNotification(expoPushToken: string) {
+    const message = {
+      to: expoPushToken,
+      sound: "default",
+      title: "Get Bac on Track",
+      body: notifications[Math.floor(Math.random() * 6)],
+      data: { someData: "goes here" },
+    };
+
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Accept-encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+    setTimeSinceLastNotif(Date.now());
+  }
+
+  function handleRegistrationError(errorMessage: string) {
+    alert(errorMessage);
+    throw new Error(errorMessage);
+  }
+
+  async function registerForPushNotificationsAsync() {
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "default",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: "#FF231F7C",
+      });
+    }
+
+    if (Device.isDevice) {
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== "granted") {
+        handleRegistrationError(
+          "Permission not granted to get push token for push notification!"
+        );
+        return;
+      }
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ??
+        Constants?.easConfig?.projectId;
+      if (!projectId) {
+        handleRegistrationError("Project ID not found");
+      }
+      try {
+        const pushTokenString = (
+          await Notifications.getExpoPushTokenAsync({
+            projectId,
+          })
+        ).data;
+        console.log(pushTokenString);
+        return pushTokenString;
+      } catch (e: unknown) {
+        handleRegistrationError(`${e}`);
+      }
+    } else {
+      handleRegistrationError(
+        "Must use physical device for push notifications"
+      );
+    }
+  }
+
+  const [expoPushToken, setExpoPushToken] = useState("");
+  const [timeSinceLastNotif, setTimeSinceLastNotif] = useState(0); // seconds
+  const [notification, setNotification] = useState<
+    Notifications.Notification | undefined
+  >(undefined);
+
+  useEffect(() => {
+    registerForPushNotificationsAsync()
+      .then((token) => setExpoPushToken(token ?? ""))
+      .catch((error: any) => setExpoPushToken(`${error}`));
+
+    const notificationListener = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        setNotification(notification);
+      }
+    );
+
+    const responseListener =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log(response);
+      });
+
+    return () => {
+      notificationListener.remove();
+      responseListener.remove();
+    };
+  }, []);
+
   const [ratingData, setRatingData] = React.useState({
     rating: 0,
     current_length: 0,
@@ -21,23 +180,73 @@ export default function MeTab() {
     status: "poor",
   });
 
+  useEffect(() => {
+    setInterval(() => {
+      getRating();
+      updateGraph();
+    }, 1000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // calls ws to get curent posture rating
+  const getRating = () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ action: "rating" }));
+    } else {
+      console.log("WebSocket not connected. Please refresh the page.");
+    }
+  };
+
+  const handleRating = (message: {
+    rating: string;
+    current_length: number;
+    baseline_length: number;
+    difference: number;
+    status: "good" | "moderate" | "poor";
+  }) => {
+    console.log("here");
+    setRatingData({
+      ...message,
+      rating: Number(message.rating),
+    });
+  };
+
+  const handleGraph = (message: { data: [string, number][] }) => {
+    // Convert timestamp → readable time and keep rating
+    const processedData = message.data.map(([timestamp, rating]) => {
+      const timeLabel = new Date(Number(timestamp) * 1000).toLocaleTimeString();
+      return { timeLabel, rating };
+    });
+    console.log("Processed Data:", processedData);
+    // Now, update your chartData dynamically (you should make this a state variable!)
+    setChartData((prevData) => ({
+      ...prevData,
+      times: {
+        labels: processedData.map((d) => d.timeLabel),
+        datasets: [{ data: processedData.map((d) => d.rating) }],
+      },
+    }));
+  };
+
+  const updateGraph = () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ action: "graph" }));
+    } else {
+      console.log("WebSocket not connected. Please refresh the page.");
+    }
+  };
+
+  const resetPosture = () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ action: "reset" }));
+    } else {
+      console.log("WebSocket not connected. Please refresh the page.");
+    }
+  };
+
   const [stretchesDone] = React.useState(12); // stubbed
   const [activeTime] = React.useState("1h 45m"); // stubbed
   const [postureAlerts] = React.useState(3); // stubbed
-
-  // WebSocket connection (example route)
-  React.useEffect(() => {
-    const ws = new WebSocket("ws://YOUR_SERVER_URL/RATING"); // replace with your server endpoint
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setRatingData(data);
-      } catch (err) {
-        console.error("Invalid WebSocket data:", err);
-      }
-    };
-    return () => ws.close();
-  }, []);
 
   // -------------------- Existing chart code (UNCHANGED) --------------------
   const [tooltipPos, setTooltipPos] = React.useState({
@@ -49,13 +258,23 @@ export default function MeTab() {
     index: 0,
   });
 
-  const [timeRange, setTimeRange] =
-    React.useState<"times" | "dates" | "years">("times");
+  const [timeRange, setTimeRange] = React.useState<"times" | "dates" | "years">(
+    "times"
+  );
 
-  const chartData = {
+  type ChartDataType = {
+    labels: string[];
+    datasets: { data: number[] }[];
+  };
+
+  const [chartData, setChartData] = React.useState<{
+    times: ChartDataType;
+    dates: ChartDataType;
+    years: ChartDataType;
+  }>({
     times: {
-      labels: ["8 AM", "10 AM", "12 PM", "2 PM", "6 PM"],
-      datasets: [{ data: [80, 100, 30, 60, 10] }],
+      labels: ["Loading"],
+      datasets: [{ data: [0] }],
     },
     dates: {
       labels: ["Jan 1", "Jan 2", "Jan 3", "Jan 4", "Jan 5"],
@@ -65,7 +284,28 @@ export default function MeTab() {
       labels: ["Jan", "Feb", "March", "April", "May"],
       datasets: [{ data: [40, 55, 70, 85, 95] }],
     },
-  };
+  });
+
+  useEffect(() => {
+    async function checkAndNotify() {
+      if (
+        chartData.times.datasets[0].data.length < 10 ||
+        Date.now() - timeSinceLastNotif < 5 * 60 * 1000 // don't send notif if its been < 5 min
+      ) {
+        // no notifs if < 10 ratings
+        return;
+      }
+      let max = 0;
+      chartData.times.datasets[0].data.forEach((num) => {
+        max = Math.max(max, num);
+      });
+      if (max < 60) {
+        // send push notifications
+        await sendPushNotification(expoPushToken);
+      }
+    }
+    checkAndNotify();
+  }, [chartData, expoPushToken]);
 
   const data = chartData[timeRange];
 
@@ -75,7 +315,10 @@ export default function MeTab() {
 
   // -------------------- PAGE UI --------------------
   return (
-    <ScrollView style={styles.pageContainer} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView
+      style={styles.pageContainer}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    >
       {/* Profile Header */}
       <View style={styles.profileContainer}>
         <View style={styles.profilePicWrapper}>
@@ -177,7 +420,6 @@ export default function MeTab() {
               </Text>
             </TouchableOpacity>
           </View>
-
           <LineChart
             data={data}
             width={Dimensions.get("window").width - 40}
@@ -276,6 +518,23 @@ export default function MeTab() {
             <Text style={styles.activityValue}>{postureAlerts}</Text>
           </View>
         </View>
+      </View>
+      <View style={styles.activitiesContainer}>
+        <Text style={styles.activitiesHeader}>Danger</Text>
+        <Pressable
+          style={{
+            borderColor: "red",
+            borderWidth: 2,
+            width: "100%",
+            height: 50,
+            justifyContent: "center",
+            alignItems: "center",
+            borderRadius: 10,
+          }}
+          onPress={() => resetPosture()}
+        >
+          <Text style={{ color: "red", fontSize: 16 }}>Sign Out</Text>
+        </Pressable>
       </View>
     </ScrollView>
   );
