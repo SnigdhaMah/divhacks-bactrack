@@ -1,7 +1,8 @@
 
 import { Redirect } from 'expo-router';
 import { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, ImageBackground, Image } from "react-native";
+import Fontisto from "@expo/vector-icons/Fontisto";
 
 export default function Index() {
   const IP_ADDRESS = "10.206.36.242";
@@ -44,23 +45,51 @@ export default function Index() {
   return redir ? (
     <Redirect href="/(tabs)/feed" />
   ) : (
-    <View style={{ justifyContent: "center", alignItems: "center" }}>
-      <Text>Hi</Text>
-      <View style={{ height: 100 }} />
-      <Pressable
+    <ImageBackground
+      source={require("../assets/images/bactrack-title-page.png")}
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "absolute",
+        top: 0,
+        backgroundColor: "#FFF4E9",
+      }}
+    >
+      <View
         style={{
-          borderColor: "red",
-          borderWidth: 2,
-          width: "100%",
-          height: 50,
           justifyContent: "center",
           alignItems: "center",
-          borderRadius: 10,
+
+          height: "100%",
         }}
-        onPress={() => calibrate()}
       >
-        <Text style={{ color: "red", fontSize: 16 }}>Calibrate</Text>
-      </Pressable>
-    </View>
+        <View style={{ height: 200 }} />
+        <Image
+          source={require("../assets/images/cat.png")}
+          style={{ width: 150, height: 170, marginLeft: 20 }}
+        />
+
+        <Pressable
+          style={{
+            borderColor: "black",
+            backgroundColor: "transparent",
+            borderWidth: 2,
+            width: "50%",
+            height: 50,
+            justifyContent: "center",
+            alignItems: "center",
+            borderRadius: 10,
+            flexDirection: "row",
+          }}
+          onPress={() => calibrate()}
+        >
+          <Text style={{ color: "#F04C1A", fontSize: 20, fontWeight: "bold" }}>
+            START
+          </Text>
+          <View style={{ width: 10 }} />
+          <Fontisto name="play" color="#F04C1A" size={20} />
+        </Pressable>
+      </View>
+    </ImageBackground>
   );
 }

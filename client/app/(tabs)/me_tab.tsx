@@ -183,9 +183,9 @@ export default function MeTab() {
 
   useEffect(() => {
     setInterval(() => {
-      // getRating();
-      // updateGraph();
-    }, 10000);
+      getRating();
+      updateGraph();
+    }, 2000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -223,7 +223,7 @@ export default function MeTab() {
     setChartData((prevData) => ({
       ...prevData,
       times: {
-        labels: processedData.map((d) => d.timeLabel),
+        labels: processedData.map((d) => ""),
         datasets: [{ data: processedData.map((d) => d.rating) }],
       },
     }));
@@ -579,6 +579,21 @@ export default function MeTab() {
       </TouchableWithoutFeedback>
       <Pressable style={{ paddingTop: 30 }}>
         <Image source={require("../../assets/images/profile-shopbutton.png")} />
+      </Pressable>
+      <Pressable
+        style={{
+          marginTop: 20,
+          borderColor: "red",
+          borderWidth: 2,
+          width: "100%",
+          height: 50,
+          justifyContent: "center",
+          alignItems: "center",
+          borderRadius: 10,
+        }}
+        onPress={() => resetPosture()}
+      >
+        <Text style={{ color: "red", fontSize: 16 }}>Sign Out</Text>
       </Pressable>
     </ScrollView>
   );
