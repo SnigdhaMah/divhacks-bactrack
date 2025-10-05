@@ -1,6 +1,12 @@
 // socials.tsx
 import React from "react";
-import { Text, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Text,
+  ScrollView,
+  StyleSheet,
+  View,
+  ImageBackground,
+} from "react-native";
 import FriendCard from "../../components/friendsCard";
 import InviteCard from "../../components/inviteCard";
 
@@ -37,17 +43,25 @@ const friendsData = [
 
 export default function Socials() {
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <View style={{height:40}}/>
-      <Text style={styles.header}>Friends Activity</Text>
-      <Text style={styles.subHeader}>See how your friends are doing</Text>
+    <ImageBackground
+      source={require("../../assets/images/friends-background.png")}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={{ height: 40 }} />
+        <Text style={styles.header}>Friends Activity</Text>
+        <Text style={styles.subHeader}>
+          Today, learn from Katharine, Ms.Perfect Posture
+        </Text>
 
-      {friendsData.map((friend, index) => (
+        {friendsData.map((friend, index) => (
           <FriendCard key={friend.id} friend={friend} colorIndex={index} />
-      ))}
+        ))}
 
-      <InviteCard />
-    </ScrollView>
+        <InviteCard />
+      </ScrollView>
+    </ImageBackground>
   );
 }
 
@@ -70,6 +84,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#475569",
     marginBottom: 16,
+  },
+  background: {
+    flex: 1,
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    top: 0,
+    bottom: 0,
   },
 });
 

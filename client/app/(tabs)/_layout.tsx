@@ -1,41 +1,70 @@
 import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Image } from "react-native";
 
 export default function TabsLayout() {
   return (
     <Tabs
-      screenOptions={({ route }) => ({
-        tabBarActiveTintColor: "#007aff", // Blue when active
-        tabBarInactiveTintColor: "gray", // Gray when inactive
+      screenOptions={{
+        // tabBarActiveTintColor: "#ECF098",
+        // tabBarInactiveTintColor: "gray",
         headerShown: false,
         tabBarLabelStyle: { fontSize: 12 },
         tabBarStyle: {
           paddingTop: 10,
         },
-        tabBarIcon: ({ color, size }) => {
-          let iconName: string;
-
-          switch (route.name) {
-            case "me_tab":
-              iconName = "person";
-              break;
-            case "feed":
-              iconName = "list";
-              break;
-            case "socials":
-              iconName = "people";
-              break;
-            default:
-              iconName = "ellipse";
-          }
-
-          return <Ionicons name={iconName as any} size={size} color={color} />;
-        },
-      })}
+      }}
     >
-      <Tabs.Screen name="me_tab" options={{ title: "Me" }} />
-      <Tabs.Screen name="feed" options={{ title: "Feed" }} />
-      <Tabs.Screen name="socials" options={{ title: "Socials" }} />
+      <Tabs.Screen
+        name="me_tab"
+        options={{
+          title: "Me",
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={
+                focused
+                  ? require("../../assets/images/person-active.png")
+                  : require("../../assets/images/person-inactive.png")
+              }
+              style={{ width: 24, height: 24 }}
+              resizeMode="contain"
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="feed"
+        options={{
+          title: "Feed",
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={
+                focused
+                  ? require("../../assets/images/feed-active.png")
+                  : require("../../assets/images/feed-inactive.png")
+              }
+              style={{ width: 24, height: 24 }}
+              resizeMode="contain"
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="socials"
+        options={{
+          title: "Socials",
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={
+                focused
+                  ? require("../../assets/images/friends-active.png")
+                  : require("../../assets/images/friends-inactive.png")
+              }
+              style={{ width: 24, height: 24 }}
+              resizeMode="contain"
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
+  Image,
   Platform,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
@@ -146,9 +147,9 @@ export default function MeTab() {
 
   const [expoPushToken, setExpoPushToken] = useState("");
   const [timeSinceLastNotif, setTimeSinceLastNotif] = useState(0); // seconds
-  const [notification, setNotification] = useState<
-    Notifications.Notification | undefined
-  >(undefined);
+  const [, setNotification] = useState<Notifications.Notification | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     registerForPushNotificationsAsync()
@@ -182,9 +183,9 @@ export default function MeTab() {
 
   useEffect(() => {
     setInterval(() => {
-      getRating();
-      updateGraph();
-    }, 1000);
+      // getRating();
+      // updateGraph();
+    }, 10000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -305,7 +306,7 @@ export default function MeTab() {
       }
     }
     checkAndNotify();
-  }, [chartData, expoPushToken]);
+  }, [chartData]);
 
   const data = chartData[timeRange];
 
@@ -317,47 +318,108 @@ export default function MeTab() {
   return (
     <ScrollView
       style={styles.pageContainer}
-      contentContainerStyle={{ paddingBottom: 40 }}
+      contentContainerStyle={{ paddingVertical: 40 }}
     >
+      <Image
+        source={require("../../assets/images/profile-star.png")}
+        style={{ alignSelf: "center", position: "absolute", top: -280 }}
+      />
       {/* Profile Header */}
       <View style={styles.profileContainer}>
-        <View style={styles.profilePicWrapper}>
-          <MaterialCommunityIcons name="account" size={80} color="#000000" />
-        </View>
-        <Text style={styles.nameText}>Jane Doe</Text>
-        <Text style={styles.usernameText}>@janedoe</Text>
+        <Image source={require("../../assets/images/profile-pic.png")} />
+        <Text style={styles.nameText}>Jane The Doer</Text>
+        <Text style={styles.usernameText}>@Hip_and_Flex</Text>
       </View>
 
       {/* Stat Boxes */}
-      <View style={styles.statsRow}>
-        {/* Posture Score Box */}
-        <View style={styles.statBox}>
-          {ratingData.rating >= 80 ? (
-            <MaterialCommunityIcons
-              name="trending-up"
-              size={28}
-              color="#16a34a"
-            />
-          ) : (
-            <MaterialCommunityIcons
-              name="trending-down"
-              size={28}
-              color="#dc2626"
-            />
-          )}
-          <Text style={styles.statValue}>{ratingData.rating}%</Text>
-          <Text style={styles.statLabel}>Posture Score</Text>
+      <View style={{ marginTop: 10, height: 100 }}>
+        <Image source={require("../../assets/images/profile-stats.png")} />
+        <View
+          style={{
+            position: "absolute",
+            top: 15,
+            left: 20,
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 30,
+              fontWeight: "900",
+              fontFamily: "Asap Condensed",
+            }}
+          >
+            {ratingData.rating}%
+          </Text>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "light",
+              letterSpacing: 0.1,
+            }}
+          >
+            Posture Score
+          </Text>
         </View>
-
-        {/* Stretches Done Box */}
-        <View style={styles.statBox}>
-          <FontAwesome5 name="heartbeat" size={28} color="#ef4444" />
-          <Text style={styles.statValue}>{stretchesDone}</Text>
-          <Text style={styles.statLabel}>Stretches Done</Text>
+        <View
+          style={{
+            position: "absolute",
+            top: 15,
+            left: Dimensions.get("window").width * 0.35,
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 30,
+              fontWeight: "900",
+              fontFamily: "Asap Condensed",
+            }}
+          >
+            #3
+          </Text>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "light",
+              letterSpacing: 0.1,
+            }}
+          >
+            Leaderboard
+          </Text>
+        </View>
+        <View
+          style={{
+            position: "absolute",
+            top: 15,
+            left: Dimensions.get("window").width * 0.65,
+            alignItems: "center",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 30,
+              fontWeight: "900",
+              fontFamily: "Asap Condensed",
+            }}
+          >
+            200
+          </Text>
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: "light",
+              letterSpacing: 0.1,
+            }}
+          >
+            Stretches
+          </Text>
         </View>
       </View>
-
-      {/* Chart Section (UNCHANGED CODE BELOW) */}
+      <View style={{ left: 20, paddingTop: 10, paddingBottom: 5 }}>
+        <Text style={{ fontSize: 20, fontWeight: "bold" }}>My Data</Text>
+      </View>
+      {/* Chart Section */}
       <TouchableWithoutFeedback onPress={handlePress}>
         <View
           style={{
@@ -368,7 +430,7 @@ export default function MeTab() {
           }}
         >
           {/* Toggle Buttons */}
-          <View style={styles.toggleContainer}>
+          <View style={[styles.toggleContainer, { zIndex: 2 }]}>
             <TouchableOpacity
               style={[
                 styles.toggleButton,
@@ -420,12 +482,28 @@ export default function MeTab() {
               </Text>
             </TouchableOpacity>
           </View>
+          <View
+            style={{
+              position: "absolute",
+              top: 30,
+              borderWidth: 4,
+              borderColor: "#E8D6FF",
+              borderRadius: 30,
+              height: 320,
+              width: Dimensions.get("screen").width * 0.93,
+              zIndex: 1,
+            }}
+          />
           <LineChart
             data={data}
             width={Dimensions.get("window").width - 40}
             height={220}
             yAxisLabel=""
             yAxisSuffix="%"
+            fromZero={true}
+            yAxisInterval={20}
+            yLabelsOffset={10}
+            segments={5}
             chartConfig={{
               backgroundColor: "#ffffff",
               backgroundGradientFrom: "#ffffff",
@@ -467,14 +545,15 @@ export default function MeTab() {
                   >
                     <Text
                       style={{
-                        color: "white",
+                        color: "black",
                         fontWeight: "bold",
                         fontSize: 16,
+                        backgroundColor: "pink",
                       }}
                     >
                       {tooltipPos.value}%
                     </Text>
-                    <Text style={{ color: "white", fontSize: 12 }}>
+                    <Text style={{ color: "black", fontSize: 12 }}>
                       {data.labels[tooltipPos.index]}
                     </Text>
                   </View>
@@ -493,49 +572,14 @@ export default function MeTab() {
             }}
           />
 
-          <Text style={{ marginTop: 10, color: "#666", fontSize: 12 }}>
-            Tap on any dot to see details. Tap elsewhere to hide.
+          <Text style={{ color: "#666", fontSize: 12 }}>
+            Tap on any dot to see details.
           </Text>
         </View>
       </TouchableWithoutFeedback>
-
-      {/* Today's Activities */}
-      <View style={styles.activitiesContainer}>
-        <Text style={styles.activitiesHeader}>Todays Activities</Text>
-
-        <View style={styles.activityBox}>
-          <MaterialCommunityIcons name="timer-sand" size={22} color="#f97316" />
-          <View style={{ marginLeft: 10 }}>
-            <Text style={styles.activityLabel}>Active Time</Text>
-            <Text style={styles.activityValue}>{activeTime}</Text>
-          </View>
-        </View>
-
-        <View style={styles.activityBox}>
-          <MaterialCommunityIcons name="alert" size={22} color="#dc2626" />
-          <View style={{ marginLeft: 10 }}>
-            <Text style={styles.activityLabel}>Posture Alerts</Text>
-            <Text style={styles.activityValue}>{postureAlerts}</Text>
-          </View>
-        </View>
-      </View>
-      <View style={styles.activitiesContainer}>
-        <Text style={styles.activitiesHeader}>Danger</Text>
-        <Pressable
-          style={{
-            borderColor: "red",
-            borderWidth: 2,
-            width: "100%",
-            height: 50,
-            justifyContent: "center",
-            alignItems: "center",
-            borderRadius: 10,
-          }}
-          onPress={() => resetPosture()}
-        >
-          <Text style={{ color: "red", fontSize: 16 }}>Sign Out</Text>
-        </Pressable>
-      </View>
+      <Pressable style={{ paddingTop: 30 }}>
+        <Image source={require("../../assets/images/profile-shopbutton.png")} />
+      </Pressable>
     </ScrollView>
   );
 }
@@ -627,9 +671,11 @@ const styles = StyleSheet.create({
   toggleContainer: {
     flexDirection: "row",
     marginBottom: 20,
-    backgroundColor: "#f0f0f0",
     borderRadius: 10,
-    padding: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    borderWidth: 1,
+    backgroundColor: "white",
   },
   toggleButton: {
     paddingVertical: 10,
@@ -638,15 +684,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   toggleButtonActive: {
-    backgroundColor: "pink",
+    backgroundColor: "#ECF098",
   },
   toggleText: {
-    color: "#666",
+    color: "black",
     fontWeight: "500",
-    fontSize: 14,
+    fontSize: 15,
   },
   toggleTextActive: {
-    color: "white",
+    color: "black",
     fontWeight: "bold",
   },
 });

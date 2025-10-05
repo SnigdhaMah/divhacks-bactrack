@@ -42,7 +42,7 @@ export default function Index() {
     }
   };
   return redir ? (
-    <Redirect href="/feed" />
+    <Redirect href="/(tabs)/feed" />
   ) : (
     <View style={{ justifyContent: "center", alignItems: "center" }}>
       <Text>Hi</Text>
